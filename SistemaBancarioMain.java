@@ -15,11 +15,11 @@ public class SistemaBancarioMain {
             System.out.println("\n=== Sistema Bancário ===");
             System.out.println("1. Cadastrar nova conta");
             System.out.println("2. Listar todas as contas");
-            System.out.println("3. Buscar conta por número (Não implementado)");
-            System.out.println("4. Remover uma conta (Não implementado)");
-            System.out.println("5. Depositar em uma conta (Não implementado)");
-            System.out.println("6. Sacar de uma conta (Não implementado)");
-            System.out.println("7. Encerrar conta (Não implementado)");
+            System.out.println("3. Buscar conta por número");
+            System.out.println("4. Remover uma conta");
+            System.out.println("5. Depositar em uma conta");
+            System.out.println("6. Sacar de uma conta");
+            System.out.println("7. Encerrar conta");
             System.out.println("8. Sair do sistema");
             System.out.print("Escolha uma opção: ");
 
@@ -33,20 +33,30 @@ public class SistemaBancarioMain {
                 case 2:
                     listarContas();
                     break;
+                case 3:
+                    buscarConta();
+                    break;
+                case 4:
+                    removerConta();
+                    break;
+                case 5:
+                    depositarEmConta();
+                    break;
+                case 6:
+                    sacarDeConta();
+                    break;
+                case 7:
+                    encerrarConta();
+                    break;
                 case 8:
                     System.out.println("Saindo do sistema...");
                     break;
                 default:
-                    if (opcao >= 3 && opcao <= 7) {
-                        System.out.println("Opção em desenvolvimento");
-                    } else {
-                        System.out.println("Opção inválida.");
-                    }
+                    System.out.println("Opção inválida.");
             }
         } while (opcao != 8);
     }
 
-    // 3.1 Cadastrar nova conta
     private static void cadastrarConta() {
         if (quantidadeContas >= contas.length) {
             System.out.println("Erro: A capacidade máxima do vetor de contas foi atingida.");
@@ -60,7 +70,11 @@ public class SistemaBancarioMain {
         int agencia = scanner.nextInt();
         scanner.nextLine();
 
-        // Adicionar titulares
+        if (buscarContaPorNumero(numero) != null) {
+            System.out.println("Já existe uma conta com esse número.");
+            return;
+        }
+
         System.out.print("Quantos titulares terá esta conta? ");
         int qtdTitulares = scanner.nextInt();
         scanner.nextLine();
@@ -89,6 +103,7 @@ public class SistemaBancarioMain {
             System.out.print("Limite Especial: ");
             BigDecimal limite = scanner.nextBigDecimal();
             scanner.nextLine();
+
             contas[quantidadeContas] = new ContaEspecial(numero, agencia, titulares, saldo, dataAbertura, ativa, limite);
             quantidadeContas++;
             System.out.println("Conta Especial cadastrada com sucesso!");
@@ -103,41 +118,185 @@ public class SistemaBancarioMain {
             System.out.println("Conta Poupança cadastrada com sucesso!");
 
         } else {
-            System.out.println("Tipo de conta inválido. Registo cancelado.");
+            System.out.println("Tipo de conta inválido. Registro cancelado.");
         }
     }
 
-    // 3.2 Listar todas as contas
     private static void listarContas() {
         System.out.println("\n--- Lista de Contas Ativas ---");
         boolean encontrouAtiva = false;
 
-        // Mostra os dados de todas as contas ativas no vetor
         for (int i = 0; i < quantidadeContas; i++) {
             if (contas[i] != null && contas[i].isAtiva()) {
                 encontrouAtiva = true;
-                System.out.println("\nNúmero: " + contas[i].getNumeroConta() + " | Agência: " + contas[i].getAgencia());
-
-                System.out.print("Titular(es): ");
-                for (Titular t : contas[i].getTitulares()) {
-                    System.out.print(t.getNome() + " (CPF: " + t.getCpf() + ") ");
-                }
-                System.out.println("\nSaldo: " + contas[i].getSaldo());
-                System.out.println("Data de Abertura: " + contas[i].getDataAbertura());
-
-                if (contas[i] instanceof ContaEspecial) {
-                    ContaEspecial ce = (ContaEspecial) contas[i];
-                    System.out.println("Tipo: Conta Especial | Limite: " + ce.getLimiteEspecial());
-                } else if (contas[i] instanceof ContaPoupanca) {
-                    ContaPoupanca cp = (ContaPoupanca) contas[i];
-                    System.out.println("Tipo: Conta Poupança | Dia Aniversário: " + cp.getDiaDeAniversario());
-                }
+                exibirConta(contas[i]);
                 System.out.println("---------------------------------");
             }
         }
 
         if (!encontrouAtiva) {
             System.out.println("Não existem contas ativas para apresentar.");
+        }
+    }
+
+    private static void buscarConta() {
+        System.out.print("\nDigite o número da conta que deseja buscar: ");
+        int numero = scanner.nextInt();
+        scanner.nextLine();
+
+        Conta conta = buscarContaPorNumero(numero);
+
+        if (conta != null) {
+            System.out.println("\n--- Conta encontrada ---");
+            exibirConta(conta);
+        } else {
+            System.out.println("Conta não encontrada.");
+        }
+    }
+
+    private static void removerConta() {
+        System.out.print("\nDigite o número da conta que deseja remover: ");
+        int numero = scanner.nextInt();
+        scanner.nextLine();
+
+        for (int i = 0; i < quantidadeContas; i++) {
+            if (contas[i] != null && contas[i].getNumeroConta() == numero) {
+                if (contas[i].getSaldo().compareTo(BigDecimal.ZERO) == 0) {
+                    for (int j = i; j < quantidadeContas - 1; j++) {
+                        contas[j] = contas[j + 1];
+                    }
+                    contas[quantidadeContas - 1] = null;
+                    quantidadeContas--;
+                    System.out.println("Conta removida com sucesso.");
+                } else {
+                    System.out.println("Não foi possível remover. A conta precisa estar com saldo zero.");
+                }
+                return;
+            }
+        }
+
+        System.out.println("Conta não encontrada.");
+    }
+
+    private static void depositarEmConta() {
+        System.out.print("\nDigite o número da conta para depósito: ");
+        int numero = scanner.nextInt();
+        scanner.nextLine();
+
+        Conta conta = buscarContaPorNumero(numero);
+
+        if (conta == null) {
+            System.out.println("Conta não encontrada.");
+            return;
+        }
+
+        if (!conta.isAtiva()) {
+            System.out.println("A conta está inativa.");
+            return;
+        }
+
+        System.out.print("Valor do depósito: ");
+        BigDecimal valor = scanner.nextBigDecimal();
+        scanner.nextLine();
+
+        if (valor.compareTo(BigDecimal.ZERO) <= 0) {
+            System.out.println("Valor inválido.");
+            return;
+        }
+
+        conta.setSaldo(conta.getSaldo().add(valor));
+        System.out.println("Depósito realizado com sucesso. Saldo atual: " + conta.getSaldo());
+    }
+
+    private static void sacarDeConta() {
+        System.out.print("\nDigite o número da conta para saque: ");
+        int numero = scanner.nextInt();
+        scanner.nextLine();
+
+        Conta conta = buscarContaPorNumero(numero);
+
+        if (conta == null) {
+            System.out.println("Conta não encontrada.");
+            return;
+        }
+
+        if (!conta.isAtiva()) {
+            System.out.println("A conta está inativa.");
+            return;
+        }
+
+        System.out.print("Valor do saque: ");
+        BigDecimal valor = scanner.nextBigDecimal();
+        scanner.nextLine();
+
+        if (valor.compareTo(BigDecimal.ZERO) <= 0) {
+            System.out.println("Valor inválido.");
+            return;
+        }
+
+        if (conta.getSaldo().compareTo(valor) < 0) {
+            System.out.println("Saldo insuficiente.");
+            return;
+        }
+
+        conta.setSaldo(conta.getSaldo().subtract(valor));
+        System.out.println("Saque realizado com sucesso. Saldo atual: " + conta.getSaldo());
+    }
+
+    private static void encerrarConta() {
+        System.out.print("\nDigite o número da conta que deseja encerrar: ");
+        int numero = scanner.nextInt();
+        scanner.nextLine();
+
+        Conta conta = buscarContaPorNumero(numero);
+
+        if (conta == null) {
+            System.out.println("Conta não encontrada.");
+            return;
+        }
+
+        if (conta.getSaldo().compareTo(BigDecimal.ZERO) != 0) {
+            System.out.println("A conta só pode ser encerrada com saldo zero.");
+            return;
+        }
+
+        if (!conta.isAtiva()) {
+            System.out.println("A conta já está inativa.");
+            return;
+        }
+
+        conta.setAtiva(false);
+        System.out.println("Conta encerrada com sucesso.");
+    }
+
+    private static Conta buscarContaPorNumero(int numero) {
+        for (int i = 0; i < quantidadeContas; i++) {
+            if (contas[i] != null && contas[i].getNumeroConta() == numero) {
+                return contas[i];
+            }
+        }
+        return null;
+    }
+
+    private static void exibirConta(Conta conta) {
+        System.out.println("Número: " + conta.getNumeroConta());
+        System.out.println("Agência: " + conta.getAgencia());
+
+        System.out.print("Titular(es): ");
+        for (Titular t : conta.getTitulares()) {
+            System.out.print(t.getNome() + " (CPF: " + t.getCpf() + ") ");
+        }
+
+        System.out.println("\nSaldo: " + conta.getSaldo());
+        System.out.println("Data de Abertura: " + conta.getDataAbertura());
+        System.out.println("Ativa: " + (conta.isAtiva() ? "Sim" : "Não"));
+
+        if (conta instanceof ContaEspecial) {
+            ContaEspecial ce = (ContaEspecial) conta;
+            System.out.println("Tipo: Conta Especial | Limite: " + ce.getLimiteEspecial());
+        } else if (conta instanceof ContaPoupanca) {
+            ContaPoupanca cp = (ContaPoupanca) conta;
+            System.out.println("Tipo: Conta Poupança | Dia Aniversário: " + cp.getDiaDeAniversario());
         }
     }
 }
